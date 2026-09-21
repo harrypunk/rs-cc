@@ -1,0 +1,15 @@
+# rs-cc custom dictionary — your personal override slot.
+#
+# This file is embedded into the crate and loaded BEFORE the built-in
+# dictionaries, so entries here win on duplicate keys. Edit it and run
+# `cargo build` to bake in your own mappings, or load extra dictionaries
+# at runtime with `Converter::with_extra_dict`.
+#
+# Format (same as OpenCC text dictionaries, first value wins):
+#   key<TAB>value1 value2 ...
+#
+# Keys longer than 5 chars are skipped. Note that this file feeds both
+# s2t and t2s, so direction-specific entries apply in both directions.
+#
+# Example (uncomment to try):
+# 云计算	雲端計算
