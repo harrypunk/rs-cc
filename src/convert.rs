@@ -2,56 +2,7 @@
 
 use crate::dict::Dict;
 
-/// Scan `input` left to right, returning `(source_slice, matched_value)`
-/// segments. `matched_value` is `None` for chars that passed through
-/// unchanged. Always takes the longest key matching at the position.
-fn scan<'a, 'd>(dict: &'d Dict, input: &'a str) -> Vec<(&'a str, Option<&'d str>)> {
-    // Byte offset of every char boundary, plus end of string — lets us
-    // slice by char count without ever splitting a UTF-8 codepoint.
-    let bounds: Vec<usize> = input
-        .char_indices()
-        .map(|(i, _)| i)
-        .chain(std::iter::once(input.len()))
-        .collect();
-
-    let mut segments = Vec::new();
-    let mut pos = 0;
-    while pos + 1 < bounds.len() {
-        let remaining = bounds.len() - 1 - pos; // chars left
-        let max = dict.max_key_len().min(remaining);
-        let mut matched = None;
-        for len in (1..=max).rev() {
-            let key = &input[bounds[pos]..bounds[pos + len]];
-            if let Some(value) = dict.lookup(key) {
-                matched = Some((len, value));
-                break;
-            }
-        }
-        match matched {
-            Some((len, value)) => {
-                segments.push((&input[bounds[pos]..bounds[pos + len]], Some(value)));
-                pos += len;
-            }
-            None => {
-                segments.push((&input[bounds[pos]..bounds[pos + 1]], None));
-                pos += 1;
-            }
-        }
-    }
-    segments
-}
-
-/// Convert `input` against `dict` by greedy longest match.
-/// Characters with no match pass through unchanged.
-pub fn convert_with(dict: &Dict, input: &str) -> String {
-    let mut out = String::with_capacity(input.len());
-    for (source, matched) in scan(dict, input) {
-        out.push_str(matched.unwrap_or(source));
-    }
-    out
-}
-
-/// One segment of a conversion, for debugging.
+/// One segment of a conversion.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExplainStep {
     /// Source text of this segment.
@@ -62,17 +13,56 @@ pub struct ExplainStep {
     pub matched: bool,
 }
 
-/// Like [`convert_with`], but returns the segment-by-segment breakdown
-/// so you can see exactly which dictionary entries fired.
-pub fn explain_with(dict: &Dict, input: &str) -> Vec<ExplainStep> {
-    scan(dict, input)
+/// Convert `input` against `dict` by greedy longest match.
+/// Characters with no match pass through unchanged.
+pub fn convert_with(dict: &Dict, input: &str) -> String {
+    explain_with(dict, input)
         .into_iter()
-        .map(|(source, matched)| ExplainStep {
-            source: source.into(),
-            output: matched.unwrap_or(source).into(),
-            matched: matched.is_some(),
-        })
+        .map(|step| step.output.into_string())
         .collect()
+}
+
+/// The segment-by-segment breakdown of a conversion, so you can see
+/// exactly which dictionary entries fired.
+pub fn explain_with(dict: &Dict, input: &str) -> Vec<ExplainStep> {
+    let mut steps = Vec::new();
+    let mut rest = input;
+    while !rest.is_empty() {
+        let step = take_step(dict, rest);
+        rest = &rest[step.source.len()..];
+        steps.push(step);
+    }
+    steps
+}
+
+/// Read one segment from the start of `rest` (must be non-empty):
+/// the longest dictionary hit, or one passthrough char.
+fn take_step(dict: &Dict, rest: &str) -> ExplainStep {
+    // Grow the key char by char and remember every hit: the last hit
+    // is the longest one, which is what "maximal munch" wants.
+    let mut longest_hit = None;
+    let mut key = String::new();
+    for ch in rest.chars().take(dict.max_key_len()) {
+        key.push(ch);
+        if let Some(value) = dict.lookup(&key) {
+            longest_hit = Some((key.len(), value));
+        }
+    }
+    match longest_hit {
+        Some((byte_len, value)) => ExplainStep {
+            source: rest[..byte_len].into(),
+            output: value.into(),
+            matched: true,
+        },
+        None => {
+            let ch = rest.chars().next().expect("take_step needs non-empty input");
+            ExplainStep {
+                source: ch.to_string().into(),
+                output: ch.to_string().into(),
+                matched: false,
+            }
+        }
+    }
 }
 
 /// Format text as Unicode code points: `"头发"` → `"U+5934 U+53D1"`.

@@ -32,10 +32,11 @@ assert_eq!(c.convert("我用鼠标写了一段关于头发的文字"), "我用�
   into a `HashMap`. First candidate wins; first occurrence of a key wins,
   so load order is priority order. Keys longer than
   `Dict::MAX_KEY_LEN` (5 chars) are skipped.
-- `src/convert.rs` — greedy longest match: at each position try the
-  longest window (≤ `max_key_len`) down to 1 char; on hit emit the value,
-  otherwise copy the char unchanged. UTF-8 safe (works on char
-  boundaries), O(n · MAX_KEY_LEN).
+- `src/convert.rs` — greedy longest match: at each position grow the key
+  char by char (≤ `max_key_len`) and keep the longest hit; no hit means
+  the char passes through unchanged. UTF-8 safe (works on char
+  boundaries), O(n · MAX_KEY_LEN). `convert` and `explain` share this
+  one code path, so they can never disagree.
 - `src/lib.rs` — `Converter::new(BuiltinConfig::S2t | T2s)` merges
   embedded dictionaries via `include_str!`, in priority order:
   `custom.txt` → phrases → characters.
