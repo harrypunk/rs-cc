@@ -9,6 +9,11 @@
 //!
 //! let c = Converter::new(BuiltinConfig::S2t);
 //! assert_eq!(c.convert("头发"), "頭髮");
+//!
+//! // Debug segment by segment:
+//! let steps = c.explain("a头发");
+//! assert!(!steps[0].matched); // passthrough
+//! assert!(steps[1].matched);  // phrase dictionary hit
 //! ```
 
 mod convert;
@@ -17,7 +22,7 @@ pub mod dict;
 use std::io;
 use std::path::Path;
 
-pub use convert::convert_with;
+pub use convert::{ExplainStep, code_points, convert_with, explain_with};
 pub use dict::{Dict, ParseStats};
 
 // Embedded OpenCC-format dictionaries (Apache-2.0, © OpenCC contributors).
@@ -87,6 +92,13 @@ impl Converter {
     /// Convert `input` by greedy longest match.
     pub fn convert(&self, input: &str) -> String {
         convert_with(&self.dict, input)
+    }
+
+    /// Explain the conversion segment by segment — which entries fired
+    /// and what each source slice became. Pair with [`code_points`] to
+    /// debug look-alike glyphs.
+    pub fn explain(&self, input: &str) -> Vec<ExplainStep> {
+        explain_with(&self.dict, input)
     }
 
     /// The merged dictionary, exposed for inspection while learning.

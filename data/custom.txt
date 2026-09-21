@@ -11,5 +11,7 @@
 # Keys longer than 5 chars are skipped. Note that this file feeds both
 # s2t and t2s, so direction-specific entries apply in both directions.
 #
-# Example (uncomment to try):
-# 云计算	雲端計算
+# No IME or CJK font? Write entries ASCII-only with \u{...} escapes:
+#   \u{4E91}\u{8BA1}\u{7B97}	\u{96F2}\u{7AEF}\u{8A08}\u{7B97}
+# is the same as:
+#   云计算	雲端計算

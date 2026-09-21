@@ -53,6 +53,29 @@ To customize:
 - Load any OpenCC-format file at runtime:
   `Converter::with_extra_dict(BuiltinConfig::S2t, path)`.
 
+Both literal characters and `\u{...}` escapes are accepted in any
+dictionary file, so custom entries can be written without an IME or
+CJK font: `\u{6C49}\u{5B57}⇥\u{6F22}\u{5B57}` is `汉字⇥漢字`.
+
+## Debugging conversions
+
+`Converter::explain` shows which entries fired, segment by segment;
+`code_points` renders any text as Unicode values — handy when two
+glyphs look identical but aren't (e.g. `不` U+F967 vs `不` U+4E0D):
+
+```rust
+use rs_cc::{BuiltinConfig, Converter, code_points};
+
+let c = Converter::new(BuiltinConfig::S2t);
+for step in c.explain("a头发") {
+    println!("{} ({}) -> {} ({}) matched={}",
+        step.source, code_points(&step.source),
+        step.output, code_points(&step.output), step.matched);
+}
+// a (U+0061) -> a (U+0061) matched=false
+// 头发 (U+5934 U+53D1) -> 頭髮 (U+982D U+9AEE) matched=true
+```
+
 ## Accuracy vs OpenCC
 
 Against OpenCC's golden test cases (`test/testcases/testcases.json`):

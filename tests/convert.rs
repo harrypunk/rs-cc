@@ -54,3 +54,22 @@ fn custom_dict_overrides_builtin() {
     let c = Converter::with_extra_dict_str(BuiltinConfig::S2t, "头发\t自定義\n");
     assert_eq!(c.convert("头发"), "自定義");
 }
+
+#[test]
+fn unicode_escapes_in_custom_dict() {
+    // \u{6C49}\u{5B57} = 汉字, \u{6F22}\u{5B57} = 漢字 — no IME needed.
+    let c = Converter::with_extra_dict_str(
+        BuiltinConfig::S2t,
+        "\\u{6C49}\\u{5B57}\t\\u{6F22}\\u{5B57}\n",
+    );
+    assert_eq!(c.convert("汉字"), "漢字");
+}
+
+#[test]
+fn explain_reports_matches() {
+    let steps = s2t().explain("a头发");
+    assert_eq!(steps.len(), 2);
+    assert!(!steps[0].matched); // passthrough
+    assert!(steps[1].matched); // phrase hit
+    assert_eq!(rs_cc::code_points(&steps[1].output), "U+982D U+9AEE");
+}
