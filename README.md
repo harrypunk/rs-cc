@@ -85,15 +85,12 @@ cases this project deliberately skips: segmentation-sensitive phrases
 (e.g. OpenCC keeps `札记` unchanged), variant choices (`鍾` vs `锺`),
 and keys longer than 5 chars.
 
-## Deliberate limits (first edition)
+## Deliberate limits
 
 - No CLI, no config files, no binary dictionary format.
 - No semantic disambiguation beyond phrase longest-match.
 - Entries with keys > 5 chars are silently dropped (counted in
   `ParseStats::skipped_too_long`).
-
-Possible next steps: configurable `MAX_KEY_LEN`, a trie instead of
-`HashMap`, a criterion benchmark, Taiwan/HK variant dictionaries.
 
 ## License
 
