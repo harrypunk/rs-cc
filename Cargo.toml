@@ -1,6 +1,6 @@
 [package]
 name = "rs-cc"
-version = "0.1.0"
+version = "1.0.1"
 edition = "2024"
 description = "Tiny literal Simplified↔Traditional Chinese conversion (learning project)"
 license = "MIT OR Apache-2.0"
